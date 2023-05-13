@@ -1,6 +1,7 @@
 # This is a sample Python script.
 import openai
 
+#api key is disabled. this key is just an example. generate a new key.
 openai.api_key = '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'
 PREV = """Answer the new question as sales man as if he was talking to the client, 
        if those are the only restaurant you know your answer should include only one restaurant name from the list (Include resturant name in your answer)
