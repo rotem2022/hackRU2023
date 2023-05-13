@@ -1,6 +1,6 @@
 # This is a sample Python script.
 import openai
-
+# registered with hackruiiyr@gmail.com
 #api key is disabled. this key is just an example. generate a new key.
 openai.api_key = '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'
 PREV = """Answer the new question as sales man as if he was talking to the client, 
