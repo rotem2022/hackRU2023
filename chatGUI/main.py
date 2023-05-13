@@ -1,24 +1,13 @@
-""" Module that contains the methods for the server side functionality of the chat application"""
+# This is a sample Python script.
+import openai
 
-from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread
-from main import askGPT
-
-'''PREV = """Answer the new question as sales man as if he was talking to the client, 
-       if those are the only restaurant you know your answer should include only one restaurant name from the list (Include resturant name in your answer)
-       ** provide me with an answer that takes into account the customer's order history, 
-       including the specific restaurant type on each day. 
-       Give extra priority if the customer has expressed a preference for certain restaurant on a particular day of the week,
-       Your answer should be up to 20 words
-       Today's Date 5.12.2023 Friday"""'''
+openai.api_key = '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'
 PREV = """Answer the new question as sales man as if he was talking to the client, 
        if those are the only restaurant you know your answer should include only one restaurant name from the list (Include resturant name in your answer)
        ** provide me with an answer that takes into account the customer's order history, 
        including the specific restaurant type on each day. 
        If the customer has expressed a preference for certain items on a particular day,
        please take that into consideration and provide recommendations accordingly.
-       Give extra priority to recent ordered from restaurants
-       Your answer should be up to 20 words
        Today's Date 5.12.2023 Friday"""
 RESTURANT1 = """restaurant name 'American' : 
                 Appetizers
@@ -76,82 +65,7 @@ Desserts
 - Moroccan Mint Tea: Traditional sweet and minty green tea, served with small cookies 2.99$.
 - M'hancha: Sweet pastry filled with almond paste, orange blossom water, and cinnamon, shaped into a coiled snake 6.99$.
 - Halwa Shebakia: Sesame seed and honey cookies, fried and soaked in a sweet syrup, served with almonds and tea 4.99$."""
-client_that_used_to_love_asian_and_now_love_morocoo = """\nclient : John Doe age 58 History:
-                    keywords :
-                    1) Tajin
-                    2) Spicy
-                    3) Shushi
-                    Orders History : 
-Order 1:
-Restaurant: Asian
-Day: Sunday
-Date: May 21, 2021
-Dishes:
-Grilled Ribeye: $24.99
-Classic Cheeseburger: $11.99
-New York Cheesecake: $7.99
-Total price: $44.97
 
-Order 2:
-Restaurant: Asian
-Day: Friday
-Date: June 2, 2021
-Dishes:
-Edamame: $4.99
-Tom Yum Soup: $5.99
-Sushi Platter: $18.99
-Total price: $29.97
-
-Order 3:
-Restaurant: American
-Day: Thursday
-Date: May 18, 2022
-Dishes:
-Bruschetta: $7.99
-Lobster Linguine: $29.99
-New York Cheesecake: $7.99
-Total price: $45.97
-
-Order 4:
-Restaurant: Asian
-Day: Friday
-Date: June 9, 2022
-Dishes:
-Gyoza: $6.99
-General Tso's Chicken: $14.99
-Total price: $21.98
-
-Order 5:
-Restaurant: Asian
-Day: Friday
-Date: May 12, 2022
-Dishes:
-Egg Rolls: $5.99
-Pad Thai: $12.99
-Total price: $18.98
-
-Order 6:
-Restaurant: Morcoo
-Day: Friday
-Date: May 10, 2023
-Dishes:
-Harira: $4.99
-Tagine: $16.99
-M'hancha: $6.99
-Total price: $28.97
-
-Order 7:
-Restaurant: Morcoo
-Day: Sunday
-Date: May 23, 2023
-Dishes:
-Briouat: $6.99
-Couscous: $14.99
-Halwa Shebakia: $4.99
-Moroccan Mint Tea: $2.99
-Total price: $30.96
-
-"""
 client_that_love_asain_in_friday = """\nclient : John Doe age 58 History:
                     keywords :
                     1) Vegtrain
@@ -246,102 +160,26 @@ Dishes:
 Egg Rolls: $5.99
 Pad Thai: $12.99
 Total price: $18.98"""
-conversation_history = [PREV, RESTURANT1, RESTURANT2, RESTURANT3,
-                        client_that_used_to_love_asian_and_now_love_morocoo]
-""" We'll be using TCP sockets over UDP sockets, so we import AF_NET(Internet address family for IPv4) and SOCK_STREAM(connection oriented TCP)"""
+#client_that_used_to_love_asian_and_now_love_italian =
 
-"""
-clients: Dictionary that contains the client's names
-addresses: Dictionary that stores incoming (new) client's addresses
-HOST: 
-PORT: Port number for this process
-BUFFSIZE: Maximum buffer size that a client can send at a time
-ADDR: tuple containing socket address(IP address, PORT number)
-SERVER: socket object that represents the server
-bind is used to map the server object to a IP address and PORT number(socket address)
-"""
-
-clients = {}
-addresses = {}
-HOST = '127.0.0.1'
-PORT = 5545
-BUFFSIZE = 1024
-ADDR = (HOST, PORT)
-SERVER = socket(AF_INET, SOCK_STREAM)
-SERVER.bind(ADDR)
-
-"""
-The below function that will listen and accept all incoming connections.
-The accept method returns a socket object that can be used to communicate wuth the client, and the socket address of the client.
-The send method id used to send an inital greeeting message to the client.
-Then store the address of the client in the dictionary addresses
-A seperate thread is created to handle this client.
-"""
+def askGPT(text, conv):
+    message = f"Conversation history:{' '.join(conv)}\nQuestion: {text} " \
+              f"relevant for client)\nAnswer: "
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=message,
+        temperature=0.6,
+        max_tokens=500,
+    )
+    conv.append(response.choices[0].text)
 
 
-def acceptIncomingConnections():
+
+if __name__ == '__main__':
+    conversation_history = [PREV, RESTURANT1, RESTURANT2, RESTURANT3,
+                            client_that_love_asain_in_friday]  # Initialize conversation history as empty list
     while True:
-        client, clientAddress = SERVER.accept()
-        print("%s:%s has connected." % clientAddress)
-        client.send(bytes("Welcome to Bite Wise, type your name and press enter!", "utf8"))
-        addresses[client] = clientAddress
-        Thread(target=handleClient, args=(client,)).start()
-
-
-def split_string_in_half(s):
-    words = s.split()
-    halfway_point = len(words) // 2
-    first_half = ' '.join(words[:halfway_point])
-    second_half = ' '.join(words[halfway_point:])
-    first_half += "\n"
-    second_half += "\n"
-    return first_half, second_half
-
-
-"""
-The below function will handle all communication to and from a client
-The chat name of the client is obtained 
-Unless the client sends the exit message, he is allowed to chat, else, he is removed from the chat
-and some cleanup is done to remove his/her information.
-"""
-
-
-def handleClient(client):
-    name = client.recv(BUFFSIZE).decode("utf8")
-    client.send(bytes("Welcome %s, type 'exit' to exit the chat" % name, 'utf8'))
-    msg = '%s has joined the chat' % name
-    broadcast(bytes(msg, 'utf8'))
-    clients[client] = name
-    while True:
-        msg = client.recv(BUFFSIZE)
-        askGPT(msg, conversation_history)
-        if msg != bytes("'exit'", "utf8"):
-            broadcast(msg, name + ": ")
-            # broadcast(conversation_history[-1].encode('ascii'), "Bite Wise: ")
-            broadcast(bytes(conversation_history[-1], 'utf8'), "Bite Wise: ")
-
-        # else:
-        #     client.send(bytes("'exit'", "utf8"))
-        #     client.close()
-        #     del clients[client]
-        #     broadcast(bytes("%s has left the chat." % name, "utf8"))
-        #     break
-
-
-"""
-The below function will broadcast a message to all clients in the chat.
-"""
-
-
-def broadcast(msg, prefix=""):
-    for client in clients:
-        client.send(bytes(prefix, 'utf8') + msg)
-
-
-if __name__ == "__main__":
-    SERVER.listen(5)  # Listens for 5 connections at max.
-    print("Waiting for a new connection...")
-    ACCEPT_THREAD = Thread(target=acceptIncomingConnections)
-    ACCEPT_THREAD.start()  # Starts the infinite loop.
-    ACCEPT_THREAD.join()
-    SERVER.close()
+        question = input("What is your question?\n")
+        conversation_history.append(question)
+        askGPT(question, conversation_history)
+        print(conversation_history[-1])
